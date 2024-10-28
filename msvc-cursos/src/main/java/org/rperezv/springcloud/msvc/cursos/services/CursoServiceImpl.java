@@ -1,5 +1,6 @@
 package org.rperezv.springcloud.msvc.cursos.services;
 
+import org.bouncycastle.util.Iterable;
 import org.rperezv.springcloud.msvc.cursos.clients.UsuarioClientRest;
 import org.rperezv.springcloud.msvc.cursos.models.Usuario;
 import org.rperezv.springcloud.msvc.cursos.models.entity.Curso;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class CursoServiceImpl implements CursoService {
@@ -43,6 +45,28 @@ public class CursoServiceImpl implements CursoService {
     @Transactional
     public void elminar(Long id) {
         repository.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public void eliminarCursoUsuarioPorId(Long id) {
+        repository.eliminarCursoUsuarioPorId(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Curso> porIdConListaUsuarios(Long id) {
+        Optional<Curso> o = repository.findById(id);
+        if(o.isPresent()){
+            Curso curso = o.get();
+            if(!curso.getCursoUsuarios().isEmpty()) {
+                List<Long> ids = curso.getCursoUsuarios().stream().map(CursoUsuario::getUsuarioId).toList();
+                List<Usuario> usuarios = client.obtenerAlumnosPorCurso(ids);
+                curso.setUsuarios(usuarios);
+            }
+            return Optional.of(curso);
+        }
+        return Optional.empty();
     }
 
     @Override
